@@ -12,9 +12,9 @@ Textura is a project by [Liberatus](https://github.com/l-i-b-e-r-a-t-u-s). *Made
 Download the installer for your machine from the
 [Releases page](https://github.com/l-i-b-e-r-a-t-u-s/Textura/releases).
 
-- **Mac** (Apple silicon and Intel): `Textura-1.0.0-mac.pkg` installs the AU, the VST3 and the
+- **Mac** (Apple silicon and Intel): `Textura-1.0.1-mac.pkg` installs the AU, the VST3 and the
   app. It is not notarised, so the first time, right-click it and choose Open.
-- **Windows** (64-bit): `Textura-1.0.0-windows.exe` installs the VST3 and the app. Windows may
+- **Windows** (64-bit): `Textura-1.0.1-windows.exe` installs the VST3 and the app. Windows may
   warn that the publisher is unknown; choose More info, then Run anyway.
 
 Then rescan plugins in your DAW and look for **Textura** by Liberatus, under instruments.
@@ -80,7 +80,7 @@ Mac (Xcode command line tools, Ninja):
     cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64"
     cmake --build build
     tools/install.sh           # this machine only; quit your DAW first
-    tools/package_mac.sh       # dist/Textura-1.0.0-mac.pkg
+    tools/package_mac.sh       # dist/Textura-1.0.1-mac.pkg
 
 Windows (Visual Studio 2022 with C++, Git; Inno Setup for the installer):
 

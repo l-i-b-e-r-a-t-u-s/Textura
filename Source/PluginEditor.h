@@ -59,6 +59,7 @@ private:
     void drawKnob (juce::Graphics&, const Palette&, int index);
     void drawKnobPage (juce::Graphics&, const Palette&);
     void drawKey (juce::Graphics&, const Palette&, juce::Rectangle<float>, const juce::String&, bool lit, bool down);
+    void drawLed (juce::Graphics&, juce::Point<float> centre, juce::Colour lit, float size);   // transparent = off
     void drawPanel (juce::Graphics&, const Palette&, juce::Rectangle<float>);
     void drawBoot (juce::Graphics&, const Palette&);
     void drawCode (juce::Graphics&);

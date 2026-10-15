@@ -1314,24 +1314,66 @@ void LiberatusEditor::drawPanel (juce::Graphics& g, const Palette& p, Rectangle<
     g.fillRoundedRectangle (r, 14.0f);
     g.setColour (p.panelEdge);
     g.drawRoundedRectangle (r.reduced (0.5f), 14.0f, 1.0f);
-    g.setColour (p.ink3.withAlpha (0.7f));
-    for (auto c : { r.getTopLeft() + Point<float> (9, 9), r.getTopRight() + Point<float> (-9, 9),
-                    r.getBottomLeft() + Point<float> (9, -9), r.getBottomRight() + Point<float> (-9, -9) })
-        g.fillEllipse (Rectangle<float> (2.5f, 2.5f).withCentre (c));
+    // a slotted screw in each corner, set into the panel, each turned its own way
+    const bool dark = proc.darkTheme;
+    const Point<float> at[4] = { r.getTopLeft() + Point<float> (10, 10), r.getTopRight() + Point<float> (-10, 10),
+                                 r.getBottomLeft() + Point<float> (10, -10), r.getBottomRight() + Point<float> (-10, -10) };
+    const float turn[4] = { 0.70f, -0.35f, 1.25f, 0.15f };
+    for (int i = 0; i < 4; ++i)
+    {
+        const auto c = at[i];
+        const auto head = Rectangle<float> (7.0f, 7.0f).withCentre (c);
+        g.setColour (dark ? juce::Colours::black.withAlpha (0.55f) : juce::Colours::black.withAlpha (0.10f));
+        g.fillEllipse (head.expanded (1.0f).translated (0.0f, -0.5f));        // the hole it sits in
+        g.setColour (dark ? Colour (0xff3a3a3d).withAlpha (0.6f) : juce::Colours::white.withAlpha (0.5f));
+        g.fillEllipse (head.expanded (1.0f).translated (0.0f, 0.6f));         // its lit lower lip
+        g.setGradientFill (juce::ColourGradient (dark ? Colour (0xff5a5a5e) : Colour (0xfffbfbf9), c.x - 2.0f, c.y - 3.0f,
+                                                 dark ? Colour (0xff2c2c2f) : Colour (0xffd6d6d0), c.x + 2.0f, c.y + 3.5f, false));
+        g.fillEllipse (head);
+        g.setColour (dark ? juce::Colours::black.withAlpha (0.5f) : Colour (0xffb4b4ad));
+        g.drawEllipse (head.reduced (0.25f), 0.6f);
+        const Point<float> d (std::cos (turn[i]) * 2.4f, std::sin (turn[i]) * 2.4f);
+        g.setColour (dark ? juce::Colours::black.withAlpha (0.55f) : Colour (0xff6e6e68));
+        g.drawLine ({ c - d, c + d }, 1.1f);
+        g.setColour (dark ? juce::Colours::white.withAlpha (0.08f) : juce::Colours::white.withAlpha (0.7f));
+        g.drawLine ({ c - d + Point<float> (0.0f, 0.7f), c + d + Point<float> (0.0f, 0.7f) }, 0.5f);
+    }
+}
+
+void LiberatusEditor::drawLed (juce::Graphics& g, Point<float> c, Colour lit, float size)
+{
+    const auto dot = Rectangle<float> (size, size).withCentre (c);
+    if (lit.isTransparent())
+    {
+        // off: a flat, quiet lamp, not a hole
+        g.setColour (proc.darkTheme ? Colour (0xff3b413e) : Colour (0xffa9b3ad));
+        g.fillEllipse (dot);
+        return;
+    }
+    g.setColour (lit.withAlpha (0.18f));
+    g.fillEllipse (dot.expanded (size * 0.45f));
+    g.setColour (lit);
+    g.fillEllipse (dot);
+    g.setColour (juce::Colours::white.withAlpha (0.45f));
+    g.fillEllipse (Rectangle<float> (size * 0.35f, size * 0.35f).withCentre (c + Point<float> (-size * 0.15f, -size * 0.15f)));
 }
 
 void LiberatusEditor::drawKey (juce::Graphics& g, const Palette& p, Rectangle<float> r, const juce::String& label, bool lit, bool down)
 {
     const float sink = down ? 2.0f : 0.0f;
+    g.setColour (juce::Colours::black.withAlpha (proc.darkTheme ? 0.45f : 0.07f));
+    g.fillRoundedRectangle (r.translated (0.0f, 5.0f).expanded (1.0f, 0.0f), 8.0f);   // soft shadow under the key
     g.setColour (p.capEdge);
     g.fillRoundedRectangle (r.translated (0.0f, 3.0f), 7.0f);
     const auto top = r.translated (0.0f, sink);
     g.setColour (p.cap);
     g.fillRoundedRectangle (top, 7.0f);
+    g.setGradientFill (juce::ColourGradient (juce::Colours::white.withAlpha (proc.darkTheme ? 0.04f : 0.5f), top.getX(), top.getY(),
+                                             juce::Colours::white.withAlpha (0.0f), top.getX(), top.getY() + top.getHeight() * 0.6f, false));
+    g.fillRoundedRectangle (top.reduced (1.0f), 6.0f);
     g.setColour (p.panelEdge);
     g.drawRoundedRectangle (top.reduced (0.5f), 7.0f, 1.0f);
-    g.setColour (lit ? p.orange : p.ink3.withAlpha (0.5f));
-    g.fillEllipse (Rectangle<float> (4.0f, 4.0f).withCentre (top.getTopLeft() + Point<float> (8.0f, 8.0f)));
+    drawLed (g, top.getTopLeft() + Point<float> (8.5f, 8.5f), lit ? p.orange : Colour(), 4.5f);
     if (label.isNotEmpty())
         text (g, label, top.getX(), top.getCentreY() + 1.0f, top.getWidth(), juce::Justification::centred, p.ink, 12.0f);
 }
@@ -1622,56 +1664,86 @@ void LiberatusEditor::drawChrome (juce::Graphics& g, const Palette& p)
 
     text (g, "SOUND", soundBtn.getX() - 62.0f, 27.0f, 54.0f, J::centredRight, p.ink2, 9.5f);
     drawKey (g, p, soundBtn, {}, false, false);
-    g.setColour (proc.soundOn() ? p.green : p.ink3.withAlpha (0.5f));
-    g.fillEllipse (Rectangle<float> (5.0f, 5.0f).withCentre (soundBtn.getTopLeft() + Point<float> (9.0f, 9.0f)));
+    drawLed (g, soundBtn.getTopLeft() + Point<float> (9.0f, 9.0f), proc.soundOn() ? p.green : Colour(), 5.5f);
     {
-        const auto c = soundBtn.getCentre() + Point<float> (1.0f, 2.0f);
+        // a small solid speaker; a bold cross beside it when muted, two waves when on
+        const auto c = soundBtn.getCentre() + Point<float> (-1.5f, 0.5f);
         juce::Path sp;
-        sp.startNewSubPath (c.x - 6.5f, c.y - 2.0f);
-        sp.lineTo (c.x - 3.5f, c.y - 2.0f);
-        sp.lineTo (c.x + 0.5f, c.y - 5.5f);
-        sp.lineTo (c.x + 0.5f, c.y + 5.5f);
-        sp.lineTo (c.x - 3.5f, c.y + 2.0f);
-        sp.lineTo (c.x - 6.5f, c.y + 2.0f);
+        sp.startNewSubPath (c.x - 4.0f, c.y - 1.6f);
+        sp.lineTo (c.x - 2.0f, c.y - 1.6f);
+        sp.lineTo (c.x + 1.0f, c.y - 4.2f);
+        sp.lineTo (c.x + 1.0f, c.y + 4.2f);
+        sp.lineTo (c.x - 2.0f, c.y + 1.6f);
+        sp.lineTo (c.x - 4.0f, c.y + 1.6f);
         sp.closeSubPath();
         g.setColour (p.ink);
         g.fillPath (sp);
         if (proc.soundOn())
         {
             juce::Path arcs;
-            arcs.addCentredArc (c.x + 1.5f, c.y, 3.5f, 3.5f, 0.0f, 0.5f, 2.64f, true);
-            arcs.addCentredArc (c.x + 1.5f, c.y, 6.0f, 6.0f, 0.0f, 0.6f, 2.54f, true);
-            g.strokePath (arcs, juce::PathStrokeType (1.2f));
+            arcs.addCentredArc (c.x + 1.5f, c.y, 2.6f, 2.6f, 0.0f, 0.6f, 2.54f, true);
+            arcs.addCentredArc (c.x + 1.5f, c.y, 4.8f, 4.8f, 0.0f, 0.6f, 2.54f, true);
+            g.strokePath (arcs, juce::PathStrokeType (1.3f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
         }
-        else g.drawLine (c.x + 3.0f, c.y - 3.0f, c.x + 8.0f, c.y + 3.0f, 1.2f);
+        else
+        {
+            const auto x = c + Point<float> (5.0f, 0.0f);
+            juce::Path cross;
+            cross.startNewSubPath (x.x - 1.8f, x.y - 1.8f); cross.lineTo (x.x + 1.8f, x.y + 1.8f);
+            cross.startNewSubPath (x.x + 1.8f, x.y - 1.8f); cross.lineTo (x.x - 1.8f, x.y + 1.8f);
+            g.strokePath (cross, juce::PathStrokeType (1.6f, juce::PathStrokeType::mitered, juce::PathStrokeType::rounded));
+        }
     }
     {
         const auto sun = Point<float> (themeBtn.getX() - 16.0f, 27.0f), moon = Point<float> (themeBtn.getRight() + 16.0f, 27.0f);
+        // outline sun and moon, as line icons; the one in use is inked
         g.setColour (proc.darkTheme ? p.ink3 : p.ink);
-        g.fillEllipse (Rectangle<float> (5.0f, 5.0f).withCentre (sun));
+        g.drawEllipse (Rectangle<float> (5.5f, 5.5f).withCentre (sun), 1.1f);
         for (int i = 0; i < 8; ++i)
         {
             const float a = (float) i * lib::kPi / 4.0f;
             const Point<float> d (std::cos (a), std::sin (a));
-            g.drawLine ({ sun + d * 4.5f, sun + d * 6.5f }, 1.0f);
+            g.drawLine ({ sun + d * 4.6f, sun + d * 6.4f }, 1.1f);
         }
-        g.setColour (p.cap);
+        // the track sits into the bar, the thumb stands up off it
+        g.setColour (proc.darkTheme ? Colour (0xff1c1c1f) : Colour (0xffdcdcd6));
         g.fillRoundedRectangle (themeBtn, 5.0f);
         g.setColour (p.capEdge);
         g.drawRoundedRectangle (themeBtn.reduced (0.5f), 5.0f, 1.0f);
-        const auto thumb = Rectangle<float> (18.0f, 12.0f).withCentre ({ proc.darkTheme ? themeBtn.getRight() - 11.0f : themeBtn.getX() + 11.0f, themeBtn.getCentreY() });
-        g.setColour (p.panelEdge);
+        const auto thumb = Rectangle<float> (17.0f, 12.0f).withCentre ({ proc.darkTheme ? themeBtn.getRight() - 10.5f : themeBtn.getX() + 10.5f, themeBtn.getCentreY() });
+        g.setColour (juce::Colours::black.withAlpha (proc.darkTheme ? 0.4f : 0.12f));
+        g.fillRoundedRectangle (thumb.translated (0.0f, 1.0f), 3.5f);
+        g.setColour (proc.darkTheme ? Colour (0xff3a3a3e) : p.cap);
         g.fillRoundedRectangle (thumb, 3.5f);
-        g.setColour (p.ink2);
-        for (int i = -1; i <= 1; ++i) g.fillRect (thumb.getCentreX() + (float) i * 3.0f - 0.5f, thumb.getCentreY() - 3.0f, 1.0f, 6.0f);
+        g.setColour (proc.darkTheme ? Colour (0xff4a4a4e) : p.capEdge);
+        g.drawRoundedRectangle (thumb.reduced (0.5f), 3.5f, 0.8f);
+        g.setColour (p.ink3);
+        for (int i = -1; i <= 1; ++i) g.fillRect (thumb.getCentreX() + (float) i * 2.6f - 0.4f, thumb.getCentreY() - 2.5f, 0.8f, 5.0f);
+        // the crescent's outline: the moon's rim outside the bite, then the bite's rim inside the moon
         juce::Path crescent;
-        crescent.addEllipse (Rectangle<float> (9.0f, 9.0f).withCentre (moon));
-        juce::Path bite;
-        bite.addEllipse (Rectangle<float> (8.0f, 8.0f).withCentre (moon + Point<float> (3.0f, -2.5f)));
+        {
+            const float R = 5.0f, r = 4.2f;
+            const Point<float> b (2.8f, -2.2f);
+            const float bite0 = std::atan2 (b.y, b.x);
+            bool started = false;
+            for (int k = 0; k <= 96; ++k)
+            {
+                const float a = bite0 + lib::kPi * 2.0f * (float) k / 96.0f;
+                const Point<float> q (std::cos (a) * R, std::sin (a) * R);
+                if (q.getDistanceFrom (b) < r) continue;
+                if (! started) { crescent.startNewSubPath (moon + q); started = true; } else crescent.lineTo (moon + q);
+            }
+            for (int k = 96; k >= 0; --k)
+            {
+                const float a = bite0 + lib::kPi + lib::kPi * 2.0f * ((float) k / 96.0f - 0.5f);
+                const Point<float> q (b.x + std::cos (a) * r, b.y + std::sin (a) * r);
+                if (q.getDistanceFromOrigin() > R) continue;
+                crescent.lineTo (moon + q);
+            }
+            crescent.closeSubPath();
+        }
         g.setColour (proc.darkTheme ? p.ink : p.ink3);
-        g.fillPath (crescent);
-        g.setColour (p.bg);
-        g.fillPath (bite);
+        g.strokePath (crescent, juce::PathStrokeType (1.1f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
     }
 
     // around the word
